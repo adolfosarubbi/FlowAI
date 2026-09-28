@@ -1,0 +1,20 @@
+// Prisma schema for FlowAI
+// Phase 0: Minimal schema to verify PostgreSQL connectivity and run migrations.
+// Domain entities (User, Workspace, Contact, etc.) are defined in Phase 1+.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Minimal model used only to verify schema setup during Phase 0.
+// Will be removed or replaced in Phase 1 when real domain models are added.
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  @@map("health_checks")
+}

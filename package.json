@@ -1,0 +1,37 @@
+{
+  "name": "flowai",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AI-powered WhatsApp lead qualification and follow-up platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=26.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:api": "npm run lint --workspace=apps/api",
+    "lint:web": "npm run lint --workspace=apps/web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "typecheck:api": "npm run typecheck --workspace=apps/api",
+    "test": "npm run test --workspaces --if-present",
+    "test:api": "npm run test --workspace=apps/api",
+    "test:api:e2e": "npm run test:e2e --workspace=apps/api",
+    "format": "prettier --write \"**/*.{ts,js,json,md,yml,yaml}\" --ignore-path .prettierignore",
+    "format:check": "prettier --check \"**/*.{ts,js,json,md,yml,yaml}\" --ignore-path .prettierignore",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:migrate:dev": "npm run db:migrate:dev --workspace=apps/api",
+    "db:generate": "npm run db:generate --workspace=apps/api"
+  },
+  "devDependencies": {
+    "prettier": "^3.5.3"
+  }
+}

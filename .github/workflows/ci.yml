@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'chore/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-api:
+    name: API – typecheck, lint, unit tests, e2e tests, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+        working-directory: apps/api
+
+      - name: Typecheck API
+        run: npm run typecheck --workspace=apps/api
+
+      - name: Lint API
+        run: npm run lint --workspace=apps/api
+
+      - name: Run API unit tests
+        run: npm run test --workspace=apps/api
+
+      - name: Run API e2e tests
+        run: npm run test:e2e --workspace=apps/api
+
+      - name: Build API
+        run: npm run build --workspace=apps/api
+
+    validate-api:
+    name: API - typecheck, lint, unit tests, e2e tests, build
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://flowai:flowai_ci@localhost:5432/flowai_ci?schema=public
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint Web
+        run: npm run lint --workspace=apps/web
+
+      - name: Build Web
+        run: npm run build --workspace=apps/web
+
+  format-check:
+    name: Formatting check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
