@@ -10,46 +10,122 @@ Demonstrate production-oriented full-stack TypeScript engineering with:
 - Angular 22 + TypeScript
 - PostgreSQL 16 + Prisma 7
 - Redis 7
-- BullMQ (introduced when background jobs are needed)
-- REST/OpenAPI (Swagger)
-- WebSockets / Socket.IO (Phase 3+)
-- WhatsApp Cloud API (Phase 5+)
-- LLM structured outputs (Phase 4+)
+- REST / OpenAPI (Swagger)
+- WebSockets / Socket.IO when real-time requirements justify them
+- WhatsApp Cloud API in a later phase
+- Structured LLM outputs for lead qualification
 - Docker + Docker Compose
 - GitHub Actions CI
+- Vitest
 
 ## Product objective
 
-Help SMEs centralize inbound WhatsApp leads, qualify them with AI, organize follow-ups and measure conversion.
+Help SMEs centralize inbound WhatsApp leads, qualify them with AI, organize follow-ups, manage a sales pipeline and measure conversion.
 
 ## Core flow
 
-```
-WhatsApp message → webhook → conversation → AI qualification → lead → pipeline → follow-up → won/lost
+```text
+WhatsApp message
+→ webhook
+→ conversation
+→ AI qualification
+→ lead
+→ pipeline
+→ follow-up
+→ won/lost
 ```
 
-## Engineering rule
+## Engineering principles
 
-Build a modular monolith first. Do not introduce microservices unless a documented requirement justifies them.
+FlowAI starts as a modular monolith.
+
+The architecture should evolve with real product needs. Do not introduce microservices, queues, WebSockets, distributed infrastructure or additional technologies unless a concrete requirement justifies them.
+
+The application is designed as a multi-tenant SaaS. Tenant isolation is a fundamental security requirement.
 
 ---
 
-## Local setup (Phase 0)
+## Current status
+
+### Phase 0 — Foundation
+
+Completed.
+
+Implemented:
+
+- npm workspaces monorepo
+- NestJS API
+- Angular frontend
+- PostgreSQL 16
+- Redis 7
+- Prisma 7
+- Docker Compose
+- environment configuration
+- health endpoint
+- PostgreSQL connectivity
+- Swagger / OpenAPI
+- Vitest unit tests
+- Vitest E2E tests
+- ESLint
+- TypeScript typecheck
+- Prettier
+- GitHub Actions CI
+- protected main branch workflow
+
+### Phase 1 — Identity & Tenancy
+
+In progress.
+
+Current foundation:
+
+- `User`
+- `Workspace`
+- `Membership`
+- roles:
+  - `ADMIN`
+  - `MANAGER`
+  - `AGENT`
+- multi-tenant data model
+- request validation foundation
+- authentication implementation in progress
+
+The relationship between users and workspaces is represented through `Membership`, allowing a user to belong to multiple workspaces with different roles.
+
+---
+
+## Roadmap
+
+```text
+Phase 0 — Foundation                      ✅ Completed
+Phase 1 — Identity & Tenancy              🚧 In progress
+Phase 2 — CRM
+Phase 3 — Inbox / Demo Transport / Realtime
+Phase 4 — AI Qualification
+Phase 5 — WhatsApp Integration
+Phase 6 — Tasks / Analytics
+Phase 7 — Production / Portfolio Polish
+```
+
+The roadmap is a guide and should only change when there is a clear technical or product reason.
+
+---
+
+## Local setup
 
 ### Prerequisites
 
-| Tool           | Version | Notes                       |
-| -------------- | ------- | --------------------------- |
-| Node.js        | 26.x    | `node --version`            |
-| npm            | 10+     | bundled with Node 26        |
-| Docker         | Latest  | for PostgreSQL + Redis      |
-| Docker Compose | v2      | bundled with Docker Desktop |
+| Tool | Version | Notes |
+| --- | --- | --- |
+| Node.js | 26.x | `node --version` |
+| npm | 10+ | bundled with Node |
+| Docker | Latest | PostgreSQL + Redis |
+| Docker Compose | v2 | bundled with Docker Desktop |
 
 ### 1. Clone
 
 ```bash
-git clone https://github.com/your-org/flowai.git
-cd flowai
+git clone git@github.com:adolfosarubbi/FlowAI.git
+cd FlowAI
 ```
 
 ### 2. Configure environment
@@ -58,7 +134,9 @@ cd flowai
 cp .env.example .env
 ```
 
-Edit `.env` if you need to change ports or credentials. The defaults work out of the box with the Docker Compose file.
+Edit `.env` if local ports or credentials need to change.
+
+Never commit real secrets.
 
 ### 3. Start infrastructure
 
@@ -68,8 +146,8 @@ docker compose up -d
 
 This starts:
 
-- **PostgreSQL 16** on `localhost:5432`
-- **Redis 7** on `localhost:6379`
+- PostgreSQL 16 on `localhost:5432`
+- Redis 7 on `localhost:6379`
 
 Check readiness:
 
@@ -77,7 +155,13 @@ Check readiness:
 docker compose ps
 ```
 
-Wait until both services show `healthy`.
+To stop the infrastructure while preserving local data:
+
+```bash
+docker compose down
+```
+
+Do not use `docker compose down -v` unless the local Docker volumes intentionally need to be deleted.
 
 ### 4. Install dependencies
 
@@ -85,55 +169,85 @@ Wait until both services show `healthy`.
 npm install
 ```
 
-This installs dependencies for all workspaces (`apps/api`, `apps/web`) in one step.
+Dependencies for the API and frontend workspaces are installed from the repository root.
 
-### 5. Generate Prisma client & apply migrations
+### 5. Generate Prisma Client
+
+From the API workspace:
 
 ```bash
-npm run db:generate        # generate the TypeScript Prisma client
-npm run db:migrate:dev     # apply migrations (creates tables in PostgreSQL)
+cd apps/api
+npm run db:generate
 ```
 
-> On first run `db:migrate:dev` will also create the migration SQL file.
+### 6. Apply development migrations
 
-### 6. Start the API
+From `apps/api`:
+
+```bash
+npm run db:migrate:dev
+```
+
+Prisma configuration is defined in:
+
+```text
+apps/api/prisma.config.ts
+```
+
+### 7. Start the API
+
+From the repository root:
 
 ```bash
 npm run dev:api
 ```
 
-The NestJS API starts on **http://localhost:3000**.
+The API runs at:
 
-### 7. Start the Angular app
+```text
+http://localhost:3000
+```
+
+### 8. Start the Angular frontend
 
 ```bash
 npm run dev:web
 ```
 
-The Angular dev server starts on **http://localhost:4200**.
+The Angular development server runs at:
 
-### 8. Verify
+```text
+http://localhost:4200
+```
 
-| What            | URL                                 |
-| --------------- | ----------------------------------- |
-| Angular app     | http://localhost:4200               |
+### 9. Verify
+
+| Service | URL |
+| --- | --- |
+| Angular app | http://localhost:4200 |
 | Health endpoint | http://localhost:3000/api/v1/health |
-| Swagger UI      | http://localhost:3000/api/docs      |
+| Swagger UI | http://localhost:3000/api/docs |
 
-### 9. Run tests
+---
+
+## Quality checks
+
+From the repository root:
 
 ```bash
-# Unit tests (API)
-npm run test:api
-
-# E2E tests (API, no DB required)
-npm run test:api:e2e
-
-# Lint + typecheck
 npm run lint
 npm run typecheck
+npm run test
+npm run build
+```
 
-# Build everything
+API-specific checks can also be run from `apps/api`:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run test:e2e
 npm run build
 ```
 
@@ -141,48 +255,122 @@ npm run build
 
 ## Repository structure
 
-```
-flowai/
-  apps/
-    api/                 NestJS 12 API
-      src/
-        health/          GET /api/v1/health
-        prisma/          PrismaService (global)
-      prisma/
-        schema.prisma    Prisma schema
-      test/              e2e tests
-    web/                 Angular 22 frontend
-  packages/              shared packages (added when justified)
-  docs/                  Architecture, data model, API contracts, ADRs
-  docker-compose.yml     PostgreSQL + Redis
-  .env.example           Environment variable reference
-  .github/workflows/ci.yml  GitHub Actions CI
+```text
+FlowAI/
+├── apps/
+│   ├── api/
+│   │   ├── prisma/
+│   │   │   ├── migrations/
+│   │   │   └── schema.prisma
+│   │   ├── src/
+│   │   │   ├── auth/
+│   │   │   ├── health/
+│   │   │   └── prisma/
+│   │   ├── test/
+│   │   └── prisma.config.ts
+│   │
+│   └── web/
+│
+├── docs/
+├── docker-compose.yml
+├── .env.example
+└── .github/
+    └── workflows/
+        └── ci.yml
 ```
 
-## npm workspace scripts
+Shared packages should only be introduced when there is an actual reuse requirement.
 
-| Script                   | Description                            |
-| ------------------------ | -------------------------------------- |
-| `npm run dev:api`        | Start NestJS in watch mode             |
-| `npm run dev:web`        | Start Angular dev server               |
-| `npm run build`          | Build all workspaces                   |
-| `npm run lint`           | Lint all workspaces                    |
-| `npm run typecheck`      | Typecheck all workspaces               |
-| `npm run test`           | Run all tests                          |
-| `npm run test:api`       | API unit tests                         |
-| `npm run test:api:e2e`   | API e2e tests (Supertest)              |
-| `npm run db:generate`    | Generate Prisma client                 |
-| `npm run db:migrate`     | Deploy migrations (production)         |
-| `npm run db:migrate:dev` | Create + apply migration (development) |
-| `npm run format`         | Format all files with Prettier         |
+---
+
+## Identity & tenancy model
+
+The initial tenancy model is:
+
+```text
+User
+  │
+  └── Membership ───── Workspace
+          │
+          └── Role
+              ├── ADMIN
+              ├── MANAGER
+              └── AGENT
+```
+
+A role belongs to a `Membership`, not directly to a `User`.
+
+This allows the same user to belong to multiple workspaces with different permissions.
+
+Business data introduced in later phases must always be scoped to a workspace.
+
+---
+
+## Authentication direction
+
+The initial authentication strategy is:
+
+- email + password
+- password hashing with Argon2id
+- short-lived access tokens
+- refresh tokens
+- authorization based on workspace membership and role
+
+Authentication and authorization are implemented incrementally during Phase 1.
+
+Passwords must never be stored or logged in plain text.
+
+---
+
+## Development workflow
+
+Feature development does not happen directly on `main`.
+
+```text
+main
+→ feature branch
+→ implementation
+→ typecheck
+→ lint
+→ tests
+→ build
+→ commit
+→ push
+→ Pull Request
+→ GitHub Actions
+→ review
+→ merge
+```
+
+`main` should remain stable.
+
+Work should be implemented in small, reviewable slices instead of large phase-wide changes.
+
+---
 
 ## Architecture decisions
 
-See [`docs/11-adrs.md`](docs/11-adrs.md) for full ADR list.
+See:
 
-**Monorepo tooling:** npm workspaces (built-in, no extra toolchain).  
-**Module system:** NestJS modular monolith — strong module boundaries, thin controllers, business logic in services.  
-**Database:** PostgreSQL via Prisma ORM — typed access, migration support, tenant-scoped queries.  
-**Background jobs:** Redis is available now; BullMQ will be added when actual queue requirements appear (Phase 3+).
+```text
+docs/11-adrs.md
+```
 
-See [`docs/`](docs/) for full documentation before implementing any phase.
+for architectural decision records.
+
+Key principles:
+
+- modular monolith
+- explicit module boundaries
+- thin controllers
+- business logic in services
+- PostgreSQL via Prisma
+- tenant-scoped data access
+- Redis only when an actual use case requires it
+- queues only when asynchronous work justifies them
+- WebSockets only when real-time product behavior requires them
+- external AI providers behind abstractions
+- structured AI outputs must be validated
+- no secrets committed to GitHub
+
+See the `docs/` directory for product, architecture, security, API and development documentation.

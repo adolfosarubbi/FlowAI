@@ -4,12 +4,21 @@ import * as path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   // Global prefix for all routes
   app.setGlobalPrefix('api/v1');
