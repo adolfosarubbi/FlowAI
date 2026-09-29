@@ -1,6 +1,4 @@
 // Prisma schema for FlowAI
-// Phase 0: Minimal schema to verify PostgreSQL connectivity and run migrations.
-// Domain entities (User, Workspace, Contact, etc.) are defined in Phase 1+.
 
 generator client {
   provider = "prisma-client-js"
@@ -10,11 +8,48 @@ datasource db {
   provider = "postgresql"
 }
 
-// Minimal model used only to verify schema setup during Phase 0.
-// Will be removed or replaced in Phase 1 when real domain models are added.
-model HealthCheck {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
+enum Role {
+  ADMIN
+  MANAGER
+  AGENT
+}
 
-  @@map("health_checks")
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  isActive     Boolean      @default(true)
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("users")
+}
+
+model Workspace {
+  id          String       @id @default(uuid())
+  name        String
+  slug        String       @unique
+  memberships Membership[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("workspaces")
+}
+
+model Membership {
+  id          String    @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        Role
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@map("memberships")
 }
