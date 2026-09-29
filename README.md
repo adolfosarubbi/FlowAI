@@ -114,12 +114,12 @@ The roadmap is a guide and should only change when there is a clear technical or
 
 ### Prerequisites
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| Node.js | 26.x | `node --version` |
-| npm | 10+ | bundled with Node |
-| Docker | Latest | PostgreSQL + Redis |
-| Docker Compose | v2 | bundled with Docker Desktop |
+| Tool           | Version | Notes                       |
+| -------------- | ------- | --------------------------- |
+| Node.js        | 26.x    | `node --version`            |
+| npm            | 10+     | bundled with Node           |
+| Docker         | Latest  | PostgreSQL + Redis          |
+| Docker Compose | v2      | bundled with Docker Desktop |
 
 ### 1. Clone
 
@@ -222,11 +222,11 @@ http://localhost:4200
 
 ### 9. Verify
 
-| Service | URL |
-| --- | --- |
-| Angular app | http://localhost:4200 |
+| Service         | URL                                 |
+| --------------- | ----------------------------------- |
+| Angular app     | http://localhost:4200               |
 | Health endpoint | http://localhost:3000/api/v1/health |
-| Swagger UI | http://localhost:3000/api/docs |
+| Swagger UI      | http://localhost:3000/api/docs      |
 
 ---
 
