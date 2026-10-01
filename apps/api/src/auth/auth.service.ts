@@ -1,12 +1,75 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './dto/login.dto';
+import type { StringValue } from 'ms';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async login(dto: LoginDto) {
+    const email = dto.email.trim().toLowerCase();
+
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      include: {
+        memberships: {
+          include: {
+            workspace: true,
+          },
+        },
+      },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const passwordIsValid = await argon2.verify(user.passwordHash, dto.password);
+
+    if (!passwordIsValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    const accessTokenExpiry = (process.env.JWT_ACCESS_EXPIRY ?? '15m') as StringValue;
+
+    const accessToken = await this.jwtService.signAsync(
+      {
+        email: user.email,
+      },
+      {
+        subject: user.id,
+        expiresIn: accessTokenExpiry,
+      },
+    );
+
+    return {
+      accessToken,
+      tokenType: 'Bearer',
+      expiresIn: accessTokenExpiry,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      memberships: user.memberships.map((membership) => ({
+        workspace: {
+          id: membership.workspace.id,
+          name: membership.workspace.name,
+          slug: membership.workspace.slug,
+        },
+        role: membership.role,
+      })),
+    };
+  }
 
   async register(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();

@@ -76,7 +76,7 @@ Implemented:
 
 In progress.
 
-Current foundation:
+Implemented:
 
 - `User`
 - `Workspace`
@@ -85,11 +85,24 @@ Current foundation:
   - `ADMIN`
   - `MANAGER`
   - `AGENT`
-- multi-tenant data model
-- request validation foundation
-- authentication implementation in progress
+- multi-tenant identity data model
+- user registration with initial workspace creation
+- initial user receives the `ADMIN` role
+- email normalization and validation
+- password hashing with Argon2id
+- email/password login
+- short-lived JWT access tokens
+- active-user validation
+- generic authentication failures to avoid account enumeration
+- workspace memberships returned after authentication
+- Swagger documentation for authentication endpoints
+- unit tests for registration and login
 
 The relationship between users and workspaces is represented through `Membership`, allowing a user to belong to multiple workspaces with different roles.
+
+The initial access token is user-scoped. Workspace and role context will be introduced explicitly rather than selecting a workspace implicitly for users who may belong to multiple tenants.
+
+Next Phase 1 work includes workspace context resolution, tenant isolation, authorization guards, role enforcement and refresh-token lifecycle design.
 
 ---
 
@@ -232,6 +245,12 @@ http://localhost:4200
 
 ## Quality checks
 
+Before pushing changes, run the repository formatting check:
+
+```bash
+npm run format:check
+```
+
 From the repository root:
 
 ```bash
@@ -241,15 +260,17 @@ npm run test
 npm run build
 ```
 
-API-specific checks can also be run from `apps/api`:
+API-specific checks can also be run from the repository root:
 
 ```bash
-npm run typecheck
-npm run lint
-npm test
-npm run test:e2e
-npm run build
+npm run typecheck --workspace=apps/api
+npm run lint --workspace=apps/api
+npm run test --workspace=apps/api
+npm run test:e2e --workspace=apps/api
+npm run build --workspace=apps/api
 ```
+
+GitHub Actions runs formatting, API validation and frontend validation on supported branches and pull requests.
 
 ---
 
@@ -306,19 +327,30 @@ Business data introduced in later phases must always be scoped to a workspace.
 
 ---
 
-## Authentication direction
+## Authentication
 
-The initial authentication strategy is:
+Currently implemented:
 
-- email + password
+- email + password registration and login
+- email normalization
 - password hashing with Argon2id
-- short-lived access tokens
-- refresh tokens
-- authorization based on workspace membership and role
+- short-lived JWT access tokens
+- inactive-user rejection
+- generic invalid-credential responses
+- authenticated user and workspace memberships returned on login
 
-Authentication and authorization are implemented incrementally during Phase 1.
+Access tokens are currently user-scoped. They identify the authenticated user but do not implicitly select a workspace or role.
 
-Passwords must never be stored or logged in plain text.
+Planned Phase 1 authentication and authorization work:
+
+- explicit workspace context resolution
+- workspace-scoped authorization
+- role-based authorization
+- guards for protected endpoints
+- cross-tenant access prevention
+- refresh-token lifecycle, rotation and revocation
+
+Passwords must never be stored or logged in plain text. Authentication failures should not disclose whether an account exists.
 
 ---
 

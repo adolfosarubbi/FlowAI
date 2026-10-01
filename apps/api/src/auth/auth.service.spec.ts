@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Role } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -6,6 +6,8 @@ import { vi } from 'vitest';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { JwtService } from '@nestjs/jwt';
+import { LoginDto } from './dto/login.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -13,6 +15,10 @@ describe('AuthService', () => {
   const userFindUnique = vi.fn();
   const workspaceFindUnique = vi.fn();
   const transaction = vi.fn();
+  const jwtSignAsync = vi.fn();
+  const jwtServiceMock = {
+    signAsync: jwtSignAsync,
+  };
 
   const prismaMock = {
     user: {
@@ -41,6 +47,10 @@ describe('AuthService', () => {
         {
           provide: PrismaService,
           useValue: prismaMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
         },
       ],
     }).compile();
@@ -203,5 +213,152 @@ describe('AuthService', () => {
         slug: 'cafe-del-sol-2',
       },
     });
+  });
+
+  it('should authenticate a valid user and return an access token', async () => {
+    const password = 'SecurePassword123!';
+    const passwordHash = await argon2.hash(password, {
+      type: argon2.argon2id,
+    });
+
+    const loginDto: LoginDto = {
+      email: '  ADOLFO@Example.com ',
+      password,
+    };
+
+    userFindUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'adolfo@example.com',
+      passwordHash,
+      firstName: 'Adolfo',
+      lastName: 'Sarubbi',
+      isActive: true,
+      memberships: [
+        {
+          role: Role.ADMIN,
+          workspace: {
+            id: 'workspace-1',
+            name: 'FlowAI Demo',
+            slug: 'flowai-demo',
+          },
+        },
+      ],
+    });
+
+    jwtSignAsync.mockResolvedValue('signed-access-token');
+
+    const result = await service.login(loginDto);
+
+    expect(userFindUnique).toHaveBeenCalledWith({
+      where: {
+        email: 'adolfo@example.com',
+      },
+      include: {
+        memberships: {
+          include: {
+            workspace: true,
+          },
+        },
+      },
+    });
+
+    expect(jwtSignAsync).toHaveBeenCalledWith(
+      {
+        email: 'adolfo@example.com',
+      },
+      {
+        subject: 'user-1',
+        expiresIn: '15m',
+      },
+    );
+
+    expect(result).toEqual({
+      accessToken: 'signed-access-token',
+      tokenType: 'Bearer',
+      expiresIn: '15m',
+      user: {
+        id: 'user-1',
+        email: 'adolfo@example.com',
+        firstName: 'Adolfo',
+        lastName: 'Sarubbi',
+      },
+      memberships: [
+        {
+          workspace: {
+            id: 'workspace-1',
+            name: 'FlowAI Demo',
+            slug: 'flowai-demo',
+          },
+          role: Role.ADMIN,
+        },
+      ],
+    });
+
+    expect(result.user).not.toHaveProperty('passwordHash');
+  });
+
+  it('should reject an invalid password without generating a token', async () => {
+    const passwordHash = await argon2.hash('CorrectPassword123!', {
+      type: argon2.argon2id,
+    });
+
+    const loginDto: LoginDto = {
+      email: 'adolfo@example.com',
+      password: 'WrongPassword123!',
+    };
+
+    userFindUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'adolfo@example.com',
+      passwordHash,
+      firstName: 'Adolfo',
+      lastName: 'Sarubbi',
+      isActive: true,
+      memberships: [],
+    });
+
+    await expect(service.login(loginDto)).rejects.toThrow(
+      new UnauthorizedException('Invalid email or password'),
+    );
+
+    expect(jwtSignAsync).not.toHaveBeenCalled();
+  });
+
+  it('should reject a nonexistent user without generating a token', async () => {
+    const loginDto: LoginDto = {
+      email: 'unknown@example.com',
+      password: 'SecurePassword123!',
+    };
+
+    userFindUnique.mockResolvedValue(null);
+
+    await expect(service.login(loginDto)).rejects.toThrow(
+      new UnauthorizedException('Invalid email or password'),
+    );
+
+    expect(jwtSignAsync).not.toHaveBeenCalled();
+  });
+
+  it('should reject an inactive user without generating a token', async () => {
+    const loginDto: LoginDto = {
+      email: 'adolfo@example.com',
+      password: 'SecurePassword123!',
+    };
+
+    userFindUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'adolfo@example.com',
+      passwordHash: 'stored-hash',
+      firstName: 'Adolfo',
+      lastName: 'Sarubbi',
+      isActive: false,
+      memberships: [],
+    });
+
+    await expect(service.login(loginDto)).rejects.toThrow(
+      new UnauthorizedException('Invalid email or password'),
+    );
+
+    expect(jwtSignAsync).not.toHaveBeenCalled();
   });
 });

@@ -22,6 +22,8 @@ describe('HealthController (e2e)', () => {
   };
 
   beforeAll(async () => {
+    process.env.JWT_ACCESS_SECRET = 'e2e-test-access-secret-not-for-production';
+
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
@@ -35,7 +37,11 @@ describe('HealthController (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
+
+    delete process.env.JWT_ACCESS_SECRET;
   });
 
   describe('GET /api/v1/health', () => {

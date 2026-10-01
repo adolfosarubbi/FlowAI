@@ -3,14 +3,17 @@ import { vi } from 'vitest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 describe('AuthController', () => {
   let controller: AuthController;
 
   const register = vi.fn();
+  const login = vi.fn();
 
   const authServiceMock = {
     register,
+    login,
   };
 
   beforeEach(async () => {
@@ -65,6 +68,43 @@ describe('AuthController', () => {
 
     expect(register).toHaveBeenCalledOnce();
     expect(register).toHaveBeenCalledWith(dto);
+    expect(result).toEqual(expectedResult);
+  });
+
+  it('should delegate login to AuthService', async () => {
+    const dto: LoginDto = {
+      email: 'admin@example.com',
+      password: 'SecurePassword123!',
+    };
+
+    const expectedResult = {
+      accessToken: 'signed-access-token',
+      tokenType: 'Bearer',
+      expiresIn: '15m',
+      user: {
+        id: 'user-1',
+        email: 'admin@example.com',
+        firstName: 'Adolfo',
+        lastName: 'Sarubbi',
+      },
+      memberships: [
+        {
+          workspace: {
+            id: 'workspace-1',
+            name: 'My Company',
+            slug: 'my-company',
+          },
+          role: 'ADMIN',
+        },
+      ],
+    };
+
+    login.mockResolvedValue(expectedResult);
+
+    const result = await controller.login(dto);
+
+    expect(login).toHaveBeenCalledOnce();
+    expect(login).toHaveBeenCalledWith(dto);
     expect(result).toEqual(expectedResult);
   });
 });
