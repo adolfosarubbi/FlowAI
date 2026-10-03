@@ -4,6 +4,9 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './roles/roles.guard';
+import { WorkspaceContextGuard } from './workspace/workspace-context.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -16,10 +19,14 @@ describe('AuthController', () => {
     login,
   };
 
+  const guardMock = {
+    canActivate: vi.fn().mockReturnValue(true),
+  };
+
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleBuilder = Test.createTestingModule({
       controllers: [AuthController],
       providers: [
         {
@@ -27,7 +34,17 @@ describe('AuthController', () => {
           useValue: authServiceMock,
         },
       ],
-    }).compile();
+    });
+
+    moduleBuilder
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardMock)
+      .overrideGuard(WorkspaceContextGuard)
+      .useValue(guardMock)
+      .overrideGuard(RolesGuard)
+      .useValue(guardMock);
+
+    const module: TestingModule = await moduleBuilder.compile();
 
     controller = module.get<AuthController>(AuthController);
   });

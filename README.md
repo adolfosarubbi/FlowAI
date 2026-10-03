@@ -97,12 +97,22 @@ Implemented:
 - workspace memberships returned after authentication
 - Swagger documentation for authentication endpoints
 - unit tests for registration and login
+- JWT-protected endpoints
+- authenticated-user resolution against the current database state
+- explicit workspace context resolution
+- membership-based tenant access validation
+- cross-tenant access prevention
+- role-based authorization with `ADMIN`, `MANAGER` and `AGENT`
+- workspace-scoped authorization guards
+- E2E coverage for authentication, tenant isolation and role enforcement
 
 The relationship between users and workspaces is represented through `Membership`, allowing a user to belong to multiple workspaces with different roles.
 
-The initial access token is user-scoped. Workspace and role context will be introduced explicitly rather than selecting a workspace implicitly for users who may belong to multiple tenants.
+Access tokens are user-scoped and do not embed workspace or role selection. Workspace context is resolved explicitly for tenant-aware requests and validated against the current `Membership` stored in the database.
 
-Next Phase 1 work includes workspace context resolution, tenant isolation, authorization guards, role enforcement and refresh-token lifecycle design.
+This design allows workspace access and role changes to take effect independently of access-token expiration.
+
+Next Phase 1 work includes completing the authorization infrastructure and designing a secure refresh-token lifecycle with rotation and revocation.
 
 ---
 
@@ -248,17 +258,19 @@ Currently implemented:
 - inactive-user rejection
 - generic invalid-credential responses
 - authenticated user and workspace memberships returned on login
-
-Access tokens are currently user-scoped. They identify the authenticated user but do not implicitly select a workspace or role.
-
-Planned Phase 1 authentication and authorization work:
-
-- explicit workspace context resolution
-- workspace-scoped authorization
-- role-based authorization
-- guards for protected endpoints
+- JWT authentication guard for protected endpoints
+- explicit workspace context for tenant-aware requests
+- membership validation against the current database state
 - cross-tenant access prevention
-- refresh-token lifecycle, rotation and revocation
+- role-based authorization
+- workspace-scoped authorization guards
+- E2E coverage for protected authentication and authorization flows
+
+Access tokens are user-scoped. They identify the authenticated user but do not implicitly select a workspace or embed a workspace role.
+
+For tenant-aware operations, workspace access and role authorization are resolved from the current membership state. This prevents possession of another workspace identifier from granting access to that tenant.
+
+Remaining Phase 1 authentication work includes secure refresh-token persistence, rotation and revocation.
 
 Passwords must never be stored or logged in plain text. Authentication failures should not disclose whether an account exists.
 
