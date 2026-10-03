@@ -1,39 +1,96 @@
-# Development Workflow with Antigravity
+# Development Workflow
 
-For now Antigravity is the only AI development assistant used on FlowAI.
+FlowAI is developed incrementally, with an emphasis on small, reviewable changes
+and a stable main branch.
 
-## Per phase
+## Development cycle
 
-1. Read source-of-truth docs.
-2. Give Antigravity only the current phase.
-3. Review its proposed plan.
-4. Allow implementation.
-5. Run its self-review prompt.
-6. Verify application manually.
-7. Commit.
-8. Start next phase only after current phase is stable.
+For each implementation slice:
 
-## Git
+1. Review the relevant product and architecture documentation.
+2. Define the scope and acceptance criteria.
+3. Create or continue work on the appropriate feature branch.
+4. Implement the smallest complete change that satisfies the requirement.
+5. Review the implementation for architecture, security and tenant isolation concerns.
+6. Run formatting, type checking, linting, tests and build validation.
+7. Perform manual verification when appropriate.
+8. Commit the completed slice with a descriptive commit message.
+9. Push only after all local quality checks pass.
+10. Use CI and code review before merging into `main`.
+
+A new development slice should not begin while the current one is known to be unstable.
+
+## Git workflow
+
+Feature development does not happen directly on `main`.
 
 Recommended branch naming:
 
-- feat/phase-0-foundation
-- feat/phase-1-identity
-- feat/contacts
-- feat/inbox
+- `feat/<feature>`
+- `fix/<issue>`
+- `chore/<task>`
 
-Commit examples:
+Examples:
 
-- chore: initialize FlowAI monorepo
-- feat(api): add health endpoint
-- feat(crm): add contact management
-- test(auth): verify workspace isolation
+- `feat/identity-tenancy`
+- `feat/contacts`
+- `feat/inbox`
+- `fix/auth-validation`
 
-## Rule
+Commit messages should describe the completed change clearly.
 
-Never ask: "Build the entire application."
+Examples:
 
-Prefer:
-"Implement backlog item 2.3 only. Read the docs first, state acceptance criteria, implement, test and stop."
+- `chore: initialize FlowAI foundation`
+- `feat: add identity and tenancy data model`
+- `feat: add user login with JWT authentication`
+- `test: verify workspace isolation`
+- `fix: prevent cross-tenant resource access`
 
-This makes AI-generated changes reviewable and keeps architecture under human control.
+## Quality gates
+
+Before a change is pushed, the repository must pass the relevant local checks for:
+
+- formatting
+- TypeScript type checking
+- linting
+- unit tests
+- E2E tests
+- application builds
+
+GitHub Actions independently validates the repository after changes are pushed.
+
+## Review principles
+
+Changes should remain small enough to understand and review without requiring
+unrelated refactoring.
+
+Reviews should consider:
+
+- correctness
+- security
+- tenant isolation
+- module boundaries
+- error handling
+- validation
+- test coverage
+- maintainability
+- unnecessary complexity
+
+Architecture should evolve from concrete product requirements rather than
+premature infrastructure or abstraction.
+
+## Documentation
+
+Documentation should be updated when a change affects:
+
+- architecture
+- public API behavior
+- data models
+- security assumptions
+- environment configuration
+- development workflow
+- major technical decisions
+
+Sensitive configuration, credentials and internal operational information must
+not be committed to the public repository.

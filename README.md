@@ -123,123 +123,33 @@ The roadmap is a guide and should only change when there is a clear technical or
 
 ---
 
-## Local setup
+## Local development
 
-### Prerequisites
+FlowAI is developed as an npm workspaces monorepo with containerized PostgreSQL
+and Redis infrastructure.
 
-| Tool           | Version | Notes                       |
-| -------------- | ------- | --------------------------- |
-| Node.js        | 26.x    | `node --version`            |
-| npm            | 10+     | bundled with Node           |
-| Docker         | Latest  | PostgreSQL + Redis          |
-| Docker Compose | v2      | bundled with Docker Desktop |
+The local development environment uses:
 
-### 1. Clone
+- Node.js 26
+- npm
+- Docker / Docker Compose
+- PostgreSQL 16
+- Redis 7
+- Prisma 7
+- NestJS API
+- Angular frontend
 
-```bash
-git clone git@github.com:adolfosarubbi/FlowAI.git
-cd FlowAI
-```
+Environment-specific configuration is managed through environment variables.
+Only safe placeholders and development defaults are included in the repository;
+real credentials and secrets must never be committed.
 
-### 2. Configure environment
+Database schema evolution is managed through Prisma migrations.
 
-```bash
-cp .env.example .env
-```
+The repository includes scripts for development, database management, testing,
+linting, type checking, formatting and production builds.
 
-Edit `.env` if local ports or credentials need to change.
-
-Never commit real secrets.
-
-### 3. Start infrastructure
-
-```bash
-docker compose up -d
-```
-
-This starts:
-
-- PostgreSQL 16 on `localhost:5432`
-- Redis 7 on `localhost:6379`
-
-Check readiness:
-
-```bash
-docker compose ps
-```
-
-To stop the infrastructure while preserving local data:
-
-```bash
-docker compose down
-```
-
-Do not use `docker compose down -v` unless the local Docker volumes intentionally need to be deleted.
-
-### 4. Install dependencies
-
-```bash
-npm install
-```
-
-Dependencies for the API and frontend workspaces are installed from the repository root.
-
-### 5. Generate Prisma Client
-
-From the API workspace:
-
-```bash
-cd apps/api
-npm run db:generate
-```
-
-### 6. Apply development migrations
-
-From `apps/api`:
-
-```bash
-npm run db:migrate:dev
-```
-
-Prisma configuration is defined in:
-
-```text
-apps/api/prisma.config.ts
-```
-
-### 7. Start the API
-
-From the repository root:
-
-```bash
-npm run dev:api
-```
-
-The API runs at:
-
-```text
-http://localhost:3000
-```
-
-### 8. Start the Angular frontend
-
-```bash
-npm run dev:web
-```
-
-The Angular development server runs at:
-
-```text
-http://localhost:4200
-```
-
-### 9. Verify
-
-| Service         | URL                                 |
-| --------------- | ----------------------------------- |
-| Angular app     | http://localhost:4200               |
-| Health endpoint | http://localhost:3000/api/v1/health |
-| Swagger UI      | http://localhost:3000/api/docs      |
+Detailed environment configuration and deployment procedures are intentionally
+not documented as part of the public portfolio.
 
 ---
 
